@@ -1,0 +1,133 @@
+﻿@page "/file-viewer"
+@using System.IO
+@using Microsoft.AspNetCore.Components.Web
+
+<h3>Server Home Directory Viewer</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        <strong>Error:</strong> @errorMessage
+    </div>
+}
+
+<div class="mb-3 d-flex align-items-center">
+    <button class="btn btn-secondary me-2" @onclick="NavigateUp" disabled="@(currentPath == rootHomePath)">
+        Bren Up
+    </button>
+    <span class="text-muted">Current Path: <strong>@currentPath</strong></span>
+</div>
+
+@if (directories == null && files == null)
+{
+    <p><em>Loading directory contents...</em></p>
+}
+else
+{
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Size (Bytes)</th>
+                <th>Last Modified</th>
+            </tr>
+        </thead>
+        <tbody>
+            @* List Directories *@
+            @foreach (var dir in directories)
+            {
+                var dirInfo = new DirectoryInfo(dir);
+                <tr @onclick="() => ChangeDirectory(dir)" style="cursor: pointer;" class="table-light">
+                    <td>📁 <strong>@dirInfo.Name</strong></td>
+                    <td>Folder</td>
+                    <td>—</td>
+                    <td>@dirInfo.LastWriteTime.ToString("yyyy-MM-dd HH:mm")</td>
+                </tr>
+            }
+
+            @* List Files *@
+            @foreach (var file in files)
+            {
+                var fileInfo = new FileInfo(file);
+                <tr>
+                    <td>📄 @fileInfo.Name</td>
+                    <td>File</td>
+                    <td>@fileInfo.Length.ToString("N0")</td>
+                    <td>fileInfo.LastWriteTime.ToString("yyyy-MM-dd HH:mm")</td>
+                </tr>
+            }
+
+            @if (directories.Length == 0 && files.Length == 0)
+            {
+                <tr>
+                    <td colspan="4" class="text-center text-muted">This folder is empty.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private string rootHomePath = string.Empty;
+    private string currentPath = string.Empty;
+    private string[] directories = Array.Empty<string>();
+    private string[] files = Array.Empty<string>();
+    private string errorMessage = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        // Resolves to /home/username (or /root) on Linux depending on the user running the app
+        rootHomePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        currentPath = rootHomePath;
+        LoadDirectoryContents();
+    }
+
+    private void LoadDirectoryContents()
+    {
+        try
+        {
+            errorMessage = string.Empty; // Clear previous errors
+
+            if (Directory.Exists(currentPath))
+            {
+                directories = Directory.GetDirectories(currentPath);
+                files = Directory.GetFiles(currentPath);
+            }
+            else
+            {
+                errorMessage = "Directory does not exist.";
+            }
+        }
+        catch (UnauthorizedAccessException)
+        {
+            errorMessage = $"Access denied to: {currentPath}. The application user does not have permission.";
+            // Revert paths so the UI doesn't get stuck in an inaccessible folder
+            directories = Array.Empty<string>();
+            files = Array.Empty<string>();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+
+    private void ChangeDirectory(string targetPath)
+    {
+        currentPath = targetPath;
+        LoadDirectoryContents();
+    }
+
+    private void NavigateUp()
+    {
+        var parentDir = Directory.GetParent(currentPath);
+        if (parentDir != null)
+        {
+            // Optional security check: Prevent navigating above the home folder if desired
+            if (currentPath == rootHomePath) return;
+
+            currentPath = parentDir.FullName;
+            LoadDirectoryContents();
+        }
+    }
+}
