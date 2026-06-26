@@ -26,7 +26,8 @@ builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuth
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseMySQL(connectionString));
-builder.Services.AddDbContext<MainDbContext>(options => options.UseMySQL(connectionString));
+builder.Services.AddDbContextFactory<MainDbContext>(options => options.UseMySQL(connectionString));
+
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 

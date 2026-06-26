@@ -1,0 +1,60 @@
+﻿@page "/thedemo"
+@using BlazLinuxHostingAdmin.Models.Dbases
+@using BlazLinuxHostingAdmin.Data
+@using Microsoft.EntityFrameworkCore;
+
+@inject IDbContextFactory<MainDbContext> DbFactory
+
+<PageTitle>The Demo</PageTitle>
+
+<h1>The Demo</h1>
+
+<p>This component demonstrates showing data.</p>
+
+@if (tModel == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Year of Birth</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in tModel)
+            {
+                <tr>                    
+                    <td>@item.Id</td>
+                    <td>@item.Name</td>
+                    <td>@item.BirthYear</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<TheDemo> tModel = default!;
+    MainDbContext dbContext = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Simulate asynchronous loading to demonstrate streaming rendering
+        dbContext = await DbFactory.CreateDbContextAsync();
+        bool isAnyDemo = await dbContext.TheDemoSet.AnyAsync();
+        if(!isAnyDemo)
+        {
+            await dbContext.TheDemoSet.AddRangeAsync(TheDemo.SampleSet());
+            await dbContext.SaveChangesAsync();
+        }
+        tModel = await dbContext.TheDemoSet.ToListAsync();
+
+    }
+
+   
+}
