@@ -1,6 +1,8 @@
 using Blaz9LinuxHostingAdmin.Components;
 using Blaz9LinuxHostingAdmin.Components.Account;
 using Blaz9LinuxHostingAdmin.Data;
+using Blaz9LinuxHostingAdmin.Options;
+using Blaz9LinuxHostingAdmin.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +14,8 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddControllers();
+builder.Services.Configure<LinuxServiceManagerOptions>(builder.Configuration.GetSection("LinuxServiceManager"));
+builder.Services.AddScoped<ILinuxServiceManager, SystemdLinuxServiceManager>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();

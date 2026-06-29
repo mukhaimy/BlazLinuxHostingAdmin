@@ -1,0 +1,196 @@
+@page "/services"
+@rendermode InteractiveServer
+@using Blaz9LinuxHostingAdmin.Models
+@using Blaz9LinuxHostingAdmin.Services
+@inject ILinuxServiceManager ServiceManager
+
+<PageTitle>Linux Services</PageTitle>
+
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <h1 class="mb-1">Linux Services</h1>
+        <p class="text-muted mb-0">Kelola service systemd aplikasi .NET yang berjalan di Ubuntu.</p>
+    </div>
+    <button class="btn btn-outline-primary" type="button" @onclick="LoadStatusesAsync" disabled="@isBusy">
+        Refresh
+    </button>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="alert @messageCssClass" role="alert">
+        @message
+    </div>
+}
+
+@if (statuses is null)
+{
+    <p><em>Memuat status service...</em></p>
+}
+else if (statuses.Count == 0)
+{
+    <div class="alert alert-warning" role="alert">
+        Belum ada service yang dikonfigurasi. Tambahkan daftar unit systemd di bagian <code>LinuxServiceManager:Services</code> pada <code>appsettings.json</code>.
+    </div>
+}
+else
+{
+    <div class="service-grid">
+        @foreach (var status in statuses)
+        {
+            <section class="service-card">
+                <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+                    <div>
+                        <h2>@status.Service.DisplayName</h2>
+                        <div class="service-name">@status.Service.Name</div>
+                    </div>
+                    <span class="badge @GetStatusBadgeClass(status.ActiveState)">
+                        @status.ActiveState / @status.SubState
+                    </span>
+                </div>
+
+                <p class="service-description">
+                    @(status.SystemdDescription ?? status.Service.Description ?? "Tidak ada deskripsi.")
+                </p>
+
+                <dl class="service-meta">
+                    <div>
+                        <dt>Load</dt>
+                        <dd>@status.LoadState</dd>
+                    </div>
+                    <div>
+                        <dt>Main PID</dt>
+                        <dd>@(status.MainPid is "0" or null ? "-" : status.MainPid)</dd>
+                    </div>
+                    <div>
+                        <dt>Exit</dt>
+                        <dd>@(status.ExecMainStatus?.ToString() ?? "-")</dd>
+                    </div>
+                </dl>
+
+                <div class="service-actions">
+                    <button class="btn btn-success" type="button" @onclick="() => ExecuteAsync(status.Service.Name, ServiceAction.Start)" disabled="@(isBusy || !status.CanStart)">
+                        Start
+                    </button>
+                    <button class="btn btn-danger" type="button" @onclick="() => ExecuteAsync(status.Service.Name, ServiceAction.Stop)" disabled="@(isBusy || !status.CanStop)">
+                        Stop
+                    </button>
+                    <button class="btn btn-outline-secondary" type="button" @onclick="() => ExecuteAsync(status.Service.Name, ServiceAction.Restart)" disabled="@isBusy">
+                        Restart
+                    </button>
+                    <button class="btn btn-outline-primary" type="button" @onclick="() => LoadLogsAsync(status.Service.Name)" disabled="@isBusy">
+                        Logs
+                    </button>
+                </div>
+            </section>
+        }
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(selectedLogService))
+{
+    <section class="logs-panel mt-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <h2 class="mb-0">Log: @selectedLogService</h2>
+            <button class="btn btn-sm btn-outline-secondary" type="button" @onclick="ClearLogs">Tutup</button>
+        </div>
+        <pre>@logs</pre>
+    </section>
+}
+
+@code {
+    private List<LinuxServiceStatus>? statuses;
+    private bool isBusy;
+    private string? message;
+    private string messageCssClass = "alert-info";
+    private string? selectedLogService;
+    private string? logs;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStatusesAsync();
+    }
+
+    private async Task LoadStatusesAsync()
+    {
+        await RunBusyAsync(async () =>
+        {
+            statuses = (await ServiceManager.GetStatusesAsync()).ToList();
+            message = null;
+        });
+    }
+
+    private async Task ExecuteAsync(string serviceName, ServiceAction action)
+    {
+        await RunBusyAsync(async () =>
+        {
+            var result = action switch
+            {
+                ServiceAction.Start => await ServiceManager.StartAsync(serviceName),
+                ServiceAction.Stop => await ServiceManager.StopAsync(serviceName),
+                ServiceAction.Restart => await ServiceManager.RestartAsync(serviceName),
+                _ => throw new InvalidOperationException("Action service tidak dikenal.")
+            };
+
+            messageCssClass = result.Succeeded ? "alert-success" : "alert-danger";
+            message = result.Succeeded
+                ? $"{action} berhasil untuk {serviceName}."
+                : $"{action} gagal untuk {serviceName}. {FirstNonEmpty(result.Error, result.Output, $"Exit code {result.ExitCode}")}";
+
+            statuses = (await ServiceManager.GetStatusesAsync()).ToList();
+        });
+    }
+
+    private async Task LoadLogsAsync(string serviceName)
+    {
+        await RunBusyAsync(async () =>
+        {
+            var result = await ServiceManager.GetLogsAsync(serviceName, 80);
+            selectedLogService = serviceName;
+            logs = FirstNonEmpty(result.Output, result.Error, "Tidak ada log.");
+        });
+    }
+
+    private async Task RunBusyAsync(Func<Task> action)
+    {
+        isBusy = true;
+        try
+        {
+            await action();
+        }
+        catch (Exception ex)
+        {
+            messageCssClass = "alert-danger";
+            message = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void ClearLogs()
+    {
+        selectedLogService = null;
+        logs = null;
+    }
+
+    private static string GetStatusBadgeClass(string activeState) => activeState switch
+    {
+        "active" => "text-bg-success",
+        "activating" or "reloading" => "text-bg-info",
+        "failed" => "text-bg-danger",
+        "inactive" or "deactivating" => "text-bg-secondary",
+        _ => "text-bg-warning"
+    };
+
+    private static string FirstNonEmpty(params string?[] values) =>
+        values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
+
+    private enum ServiceAction
+    {
+        Start,
+        Stop,
+        Restart
+    }
+}
