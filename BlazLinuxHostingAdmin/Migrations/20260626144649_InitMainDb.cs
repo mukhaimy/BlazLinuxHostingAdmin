@@ -3,7 +3,7 @@ using MySql.EntityFrameworkCore.Metadata;
 
 #nullable disable
 
-namespace BlazLinuxHostingAdmin.Migrations.MainDb
+namespace BlazLinuxHostingAdmin.Migrations
 {
     /// <inheritdoc />
     public partial class InitMainDb : Migration
@@ -18,14 +18,14 @@ namespace BlazLinuxHostingAdmin.Migrations.MainDb
                 name: "the_demo",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
+                    id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySQL:ValueGenerationStrategy", MySQLValueGenerationStrategy.IdentityColumn),
-                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false),
-                    BirthYear = table.Column<int>(type: "int", nullable: false)
+                    name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false),
+                    birth_year = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_the_demo", x => x.Id);
+                    table.PrimaryKey("pk_the_demo", x => x.id);
                 })
                 .Annotation("MySQL:Charset", "utf8mb4");
         }

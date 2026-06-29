@@ -7,10 +7,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace BlazLinuxHostingAdmin.Migrations.MainDb
+namespace BlazLinuxHostingAdmin.Migrations
 {
     [DbContext(typeof(MainDbContext))]
-    [Migration("20260626073519_InitMainDb")]
+    [Migration("20260626144649_InitMainDb")]
     partial class InitMainDb
     {
         /// <inheritdoc />
@@ -25,19 +25,23 @@ namespace BlazLinuxHostingAdmin.Migrations.MainDb
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("id");
 
                     b.Property<int>("BirthYear")
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("birth_year");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("name");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_the_demo");
 
-                    b.ToTable("the_demo");
+                    b.ToTable("the_demo", (string)null);
                 });
 #pragma warning restore 612, 618
         }
