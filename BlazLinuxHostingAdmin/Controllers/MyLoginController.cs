@@ -28,7 +28,7 @@ namespace BlazLinuxHostingAdmin.Controllers
         public async Task<ActionResult<string>> Get()
         {
             string hsl = "?APA";
-            // hsl = await Phase1();
+            hsl = await Phase1();
             //hsl += "--!!---!!---!!---!!---!!--";
             //hsl += await Phase2();
             //hsl = await Phase3();
@@ -36,39 +36,39 @@ namespace BlazLinuxHostingAdmin.Controllers
             return hsl;
         }
 
-        //private async Task<string> Phase1()
-        //{
-        //    string kode = "";
+        private async Task<string> Phase1()
+        {
+            string kode = "";
 
-        //    var roleSuperAdmin = new IdentityRole { Name = "SuperAdmin" };
-            
-        //    IdentityResult exc;
-        //    exc = await roleManager.CreateAsync(roleSuperAdmin);
-        //    kode += exc.Succeeded ? "rSA1" : "0";
+            var roleSuperAdmin = new IdentityRole { Name = "SuperAdmin" };
 
-            
-        //    #region Super Admin
-        //    ApplicationUser userSuperAdmin = new ApplicationUser
-        //    {
-        //        PhoneNumberConfirmed = true,
-        //        UserName = "the.admin",
-        //        Email = "admin@albaik.id",
-        //        RealName = "Super Admin",
-        //        EmailConfirmed = true,
-        //        RegisterDate = DateTime.Now,
-        //    };
-
-        //    exc = await userManager.CreateAsync(userSuperAdmin, "13WindRoun)-789");
-        //    kode += exc.Succeeded ? "uAL" : "0";
-
-        //    exc = await userManager.AddToRoleAsync(userSuperAdmin, roleSuperAdmin.Name);
-        //    kode += exc.Succeeded ? "urAL" : "0";
-
-        //    #endregion
+            IdentityResult exc;
+            exc = await roleManager.CreateAsync(roleSuperAdmin);
+            kode += exc.Succeeded ? "rSA1" : "0";
 
 
-        //    return kode;
-        //}
+            #region Super Admin
+            ApplicationUser userSuperAdmin = new ApplicationUser
+            {
+                PhoneNumberConfirmed = true,
+                UserName = "the.admin",
+                Email = "admin@albaik.id",
+                RealName = "Super Admin",
+                EmailConfirmed = true,
+                RegisterDate = DateTime.Now,
+            };
+
+            exc = await userManager.CreateAsync(userSuperAdmin, "13WindRoun)-P@ss");
+            kode += exc.Succeeded ? "uAL" : "0";
+
+            exc = await userManager.AddToRoleAsync(userSuperAdmin, roleSuperAdmin.Name);
+            kode += exc.Succeeded ? "urAL" : "0";
+
+            #endregion
+
+
+            return kode;
+        }
 
 
     }
